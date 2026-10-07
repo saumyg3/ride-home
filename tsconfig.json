@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["bun"]
+  },
+  "include": ["server.ts", "verify.ts", "login.ts", "sandbox-check.ts", "src", "sim", "eval", "tests"]
+}

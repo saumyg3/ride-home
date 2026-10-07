@@ -1,0 +1,560 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "group": "happy path",
+      "what": "Quote, confirm, driver found, driver arriving",
+      "expect": "One ride at the quoted price; tracking reports the driver arriving with car and plate",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "fare-expired-same-price",
+      "group": "price & confirmation",
+      "what": "User takes 3 minutes to confirm; the 2-minute fare expires, price unchanged",
+      "expect": "Gets a fresh fare and books without asking again",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "fare-expired-price-up-20",
+      "group": "price & confirmation",
+      "what": "Fare expires and the new price is 20% higher",
+      "expect": "Books nothing and asks again with the new price; booking the new quote then works",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "fare-expired-price-up-2pct",
+      "group": "price & confirmation",
+      "what": "Fare expires and the new price is 2% higher (under the 3% and $1 limits)",
+      "expect": "Books, and says the fare refreshed to the new price",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "fare-expired-price-up-over-1",
+      "group": "price & confirmation",
+      "what": "Long Black ride: new price is 2.5% higher but that's over $1",
+      "expect": "Both limits must hold, so it asks again",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "fare-expired-price-down",
+      "group": "price & confirmation",
+      "what": "Fare expires and the new price is lower",
+      "expect": "Books at the lower price",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "fare-rejected-by-uber",
+      "group": "price & confirmation",
+      "what": "Fare looks valid locally but Uber says invalid_fare_id (clock skew)",
+      "expect": "Re-quotes once and books if within approval",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "surge",
+      "group": "price & confirmation",
+      "what": "Surge pricing (1.8x) is on",
+      "expect": "Quote says so; booking stops for Uber's own accept step; after accepting, one ride",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "surge-starts-mid-confirm",
+      "group": "price & confirmation",
+      "what": "Fixed price when quoted, surge starts before the fare refresh",
+      "expect": "Doesn't book; shows the surge price for approval",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "tampered-confirmation",
+      "group": "price & confirmation",
+      "what": "Agent passes a lower price than the quote to request_ride",
+      "expect": "Refused, nothing booked",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "booked-before-user-answered",
+      "group": "price & confirmation",
+      "what": "Agent chains ride_quote straight into request_ride in one turn (seen in VoiceOS: the user said \"confirm\" about a cancel)",
+      "expect": "Nothing booked; it asks about that price. Booking works once the user has had time to answer",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "requoted-on-yes-turn",
+      "group": "price & confirmation",
+      "what": "User says yes, and the agent re-quotes the same ride before booking it",
+      "expect": "Books: the same ride type, places, and price count as already shown",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "wrong-destination-on-card",
+      "group": "price & confirmation",
+      "what": "Agent puts a different destination on the confirmation card than the quote",
+      "expect": "Refused, nothing booked",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "made-up-quote",
+      "group": "price & confirmation",
+      "what": "request_ride with a quote id that was never issued",
+      "expect": "Asks for a new quote, nothing booked",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "confirm-twice",
+      "group": "double booking",
+      "what": "User confirms, then confirms the same quote again",
+      "expect": "Second confirm returns the same ride; still one ride",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "confirm-concurrently",
+      "group": "double booking",
+      "what": "Two confirmations arrive at the same moment",
+      "expect": "One ride; both report it",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "second-quote-while-riding",
+      "group": "double booking",
+      "what": "User asks for another ride while one is on the way",
+      "expect": "Points to the existing ride instead of quoting",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "old-quote-while-riding",
+      "group": "double booking",
+      "what": "Ride booked from quote A; user then confirms an older quote B",
+      "expect": "Doesn't book B; reports the active ride",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "reuse-quote-after-ride-ended",
+      "group": "double booking",
+      "what": "Ride completed; agent re-sends the same old confirmation",
+      "expect": "Refuses to reuse the old quote",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "lost-response-after-booking",
+      "group": "network",
+      "what": "Uber creates the ride but the response never arrives",
+      "expect": "Doesn't resend; finds the ride and reports it booked; one ride",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "500-after-booking",
+      "group": "network",
+      "what": "Uber creates the ride, then returns a 500",
+      "expect": "Treats it as unknown, finds the ride, one ride",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "connection-fails-before-uber",
+      "group": "network",
+      "what": "Connection drops before Uber gets the booking",
+      "expect": "Checks, finds no ride, says nothing was booked; doesn't retry on its own",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "500-before-booking",
+      "group": "network",
+      "what": "Uber returns 500 without creating anything",
+      "expect": "Says nothing was booked; one booking attempt only",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "lost-response-and-uber-down",
+      "group": "network",
+      "what": "Booking response lost, and every follow-up check fails too",
+      "expect": "Says it can't tell, and to check the Uber app before trying again",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "flaky-reads",
+      "group": "network",
+      "what": "Price and ride-type lookups hit a 429 and a 503 first",
+      "expect": "Retries reads and quotes normally",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "retry-request",
+      "group": "network",
+      "what": "Uber answers 409 retry_request to the booking",
+      "expect": "Checks no ride was created, retries once; one ride",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "rate-limited-booking",
+      "group": "network",
+      "what": "Booking gets a 429 rate limit",
+      "expect": "A 429 means Uber did nothing: says not booked, no blind retry",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "no-drivers",
+      "group": "ride state",
+      "what": "No drivers available",
+      "expect": "Status says no driver was found and nothing was booked",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "driver-cancels",
+      "group": "ride state",
+      "what": "Driver accepts, then cancels while the user is waiting",
+      "expect": "Tracking reports the cancellation; it doesn't silently rebook",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "status-after-ride-gone",
+      "group": "ride state",
+      "what": "Driver canceled; the user later asks where their ride is",
+      "expect": "Explains the driver canceled, instead of 'no ride'",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "track-timeout",
+      "group": "ride state",
+      "what": "Driver stuck at 'accepted' longer than the tracking window",
+      "expect": "Stops after the window and says so",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "cancel-current",
+      "group": "ride state",
+      "what": "User cancels while the driver is on the way",
+      "expect": "Cancels exactly that ride and confirms it",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "cancel-stale-id",
+      "group": "ride state",
+      "what": "Cancel is called with an old ride's id while a new ride is active",
+      "expect": "Refuses; the active ride is untouched",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 2
+    },
+    {
+      "id": "cancel-during-trip",
+      "group": "ride state",
+      "what": "User tries to cancel after the trip started",
+      "expect": "Refuses and explains",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "cancel-response-lost",
+      "group": "ride state",
+      "what": "Cancel goes through but the response is lost",
+      "expect": "Retries safely, then confirms the ride is canceled",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "token-expired",
+      "group": "auth",
+      "what": "Uber rejects the access token mid-booking (401)",
+      "expect": "Renews the sign-in and books, once",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "signin-revoked",
+      "group": "auth",
+      "what": "Token rejected and the refresh token was revoked",
+      "expect": "Nothing booked; tells the user to run bun login",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "payment-declined",
+      "group": "auth",
+      "what": "Card has insufficient funds",
+      "expect": "Nothing booked; says to update payment in the Uber app",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "no-payment-method",
+      "group": "auth",
+      "what": "Account has no payment method",
+      "expect": "Nothing booked; says to add one in the Uber app",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "ambiguous-destination",
+      "group": "places",
+      "what": "\"Main Street\" matches streets in two cities",
+      "expect": "Asks which one; no quote",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "too-far",
+      "group": "places",
+      "what": "Destination is Las Vegas, over Uber's 100-mile limit",
+      "expect": "Explains why it can't quote",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "same-place",
+      "group": "places",
+      "what": "Pickup and destination are both work",
+      "expect": "Says they're the same place",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "map-down",
+      "group": "places",
+      "what": "Address lookup service fails",
+      "expect": "Clear message; suggests home or work",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    },
+    {
+      "id": "ride-type-carried-over",
+      "group": "places",
+      "what": "Agent passes a ride type the user didn't ask for this time (\"Black\" carried over)",
+      "expect": "Quotes it, plus the default UberX price, so the user chooses; picking UberX books UberX",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 1
+    },
+    {
+      "id": "unknown-product",
+      "group": "places",
+      "what": "User asks for a ride type that doesn't exist there (\"helicopter\")",
+      "expect": "Lists the ride types that are available",
+      "pass": true,
+      "detail": "",
+      "ridesCreated": 0
+    }
+  ],
+  "chaos": [
+    {
+      "rate": 0.12,
+      "sessions": 1000,
+      "steps": 6482,
+      "uberCalls": 19242,
+      "faultsInjected": {
+        "429": 513,
+        "500": 460,
+        "network": 408,
+        "500_after_commit": 465,
+        "lost_response": 449,
+        "409_retry": 62
+      },
+      "outcomes": {
+        "quote:ambiguous": 375,
+        "quote:quote": 1594,
+        "status:none": 459,
+        "track:none": 257,
+        "quote:problem": 791,
+        "book:booked": 1268,
+        "track:tracked": 173,
+        "quote:already_on_trip": 288,
+        "cancel:refused": 545,
+        "book:not_booked": 364,
+        "cancel:canceled": 178,
+        "status:ride": 297,
+        "book:price_changed": 42,
+        "book:surge_acceptance": 67,
+        "status:problem": 3,
+        "cancel:problem": 4
+      },
+      "ridesBooked": 685,
+      "violations": [],
+      "unknownOutcomes": 0,
+      "bookAttempts": 1518,
+      "deadRequests": 7
+    },
+    {
+      "rate": 0.3,
+      "sessions": 1000,
+      "steps": 6482,
+      "uberCalls": 24254,
+      "faultsInjected": {
+        "429": 1484,
+        "500": 1448,
+        "network": 1338,
+        "lost_response": 1434,
+        "500_after_commit": 1417,
+        "409_retry": 184
+      },
+      "outcomes": {
+        "quote:ambiguous": 407,
+        "quote:quote": 1500,
+        "track:none": 286,
+        "quote:problem": 1059,
+        "book:booked": 1147,
+        "status:ride": 265,
+        "quote:already_on_trip": 236,
+        "track:tracked": 176,
+        "cancel:canceled": 144,
+        "book:not_booked": 411,
+        "cancel:refused": 512,
+        "status:none": 403,
+        "cancel:problem": 34,
+        "book:price_changed": 43,
+        "book:surge_acceptance": 53,
+        "status:problem": 24,
+        "track:problem": 1
+      },
+      "ridesBooked": 624,
+      "violations": [],
+      "unknownOutcomes": 0,
+      "bookAttempts": 1435,
+      "deadRequests": 11
+    }
+  ],
+  "mutants": [
+    {
+      "name": "Books a price the user hasn't had time to answer",
+      "caughtBy": [
+        "1 scenario (booked-before-user-answered)"
+      ]
+    },
+    {
+      "name": "Re-quoting the same ride restarts the wait, so a real yes is refused",
+      "caughtBy": [
+        "1 scenario (requoted-on-yes-turn)"
+      ]
+    },
+    {
+      "name": "Resends the booking after a timeout instead of checking for the ride",
+      "caughtBy": [
+        "5 scenarios (lost-response-after-booking, 500-after-booking, connection-fails-before-uber, …)",
+        "chaos rules R3"
+      ]
+    },
+    {
+      "name": "Assumes a timed-out booking failed, without checking",
+      "caughtBy": [
+        "3 scenarios (lost-response-after-booking, 500-after-booking, lost-response-and-uber-down)",
+        "chaos rules R3"
+      ]
+    },
+    {
+      "name": "Books any re-quoted price without asking again",
+      "caughtBy": [
+        "2 scenarios (fare-expired-price-up-20, fare-expired-price-up-over-1)",
+        "chaos rules R2"
+      ]
+    },
+    {
+      "name": "Price limits use OR instead of AND (3% OR $1)",
+      "caughtBy": [
+        "1 scenario (fare-expired-price-up-over-1)"
+      ]
+    },
+    {
+      "name": "Doesn't check the card matches the quote",
+      "caughtBy": [
+        "2 scenarios (tampered-confirmation, wrong-destination-on-card)"
+      ]
+    },
+    {
+      "name": "Confirming the same quote twice books again",
+      "caughtBy": [
+        "3 scenarios (confirm-twice, confirm-concurrently, reuse-quote-after-ride-ended)",
+        "chaos rules R1"
+      ]
+    },
+    {
+      "name": "Bookings aren't serialized (double-tap race)",
+      "caughtBy": [
+        "1 scenario (confirm-concurrently)"
+      ]
+    },
+    {
+      "name": "Cancels whatever ride is current, ignoring the id it was given",
+      "caughtBy": [
+        "1 scenario (cancel-stale-id)",
+        "chaos rules R4"
+      ]
+    },
+    {
+      "name": "Retries the booking call on 5xx inside the HTTP client",
+      "caughtBy": [
+        "2 scenarios (500-after-booking, 500-before-booking)",
+        "chaos rules R3"
+      ]
+    }
+  ]
+}

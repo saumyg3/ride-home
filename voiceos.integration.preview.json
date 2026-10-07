@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "description": "Development-only sample inputs used by bun verify.ts and the VoiceOS Integration Studio preview. Safe in every mode: ride_quote only looks up a price, and request_ride and cancel_ride use ids that can't match a real quote or ride, so they refuse without booking or cancelling anything.",
+  "tools": {
+    "ride_quote": { "args": { "destination": "home" }, "expectedGlanceBlocks": 3 },
+    "request_ride": {
+      "args": { "quote_id": "q_preview_not_a_quote", "product": "UberX", "price": "$0.00", "pickup": "work", "destination": "home", "pickup_eta": "3 minutes" },
+      "expectedGlanceBlocks": 3
+    },
+    "ride_status": { "args": {}, "expectedGlanceBlocks": 2 },
+    "track_ride": { "args": { "max_minutes": 0 }, "expectedGlanceBlocks": 2 },
+    "cancel_ride": { "args": { "request_id": "preview-not-a-ride", "summary": "Preview only, cancels nothing" }, "expectedGlanceBlocks": 3 }
+  }
+}

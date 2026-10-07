@@ -1,0 +1,377 @@
+{
+  "schemaVersion": 1,
+  "id": "com.saumyagoyal.ride-home",
+  "version": "1.0.0",
+  "name": "Ride Home",
+  "summary": "Get a price, book, track, and cancel Uber rides by voice, with a confirmation before anything is booked.",
+  "description": "Say \"get me a ride home\" and Ride Home quotes the trip, shows you the exact price on a confirmation card, and only books after you approve it. Then ask \"where's my driver?\" or have it tell you when your car is arriving.\n\nBuilt for the messy parts: if the fare expires or the price jumps before you confirm, it asks again instead of booking a different price. It never books two rides, even if Uber times out mid-request. Surge pricing always goes through Uber's own accept step.\n\nStarts in **Demo** mode with a simulated Uber, so you can try it without an account. Switch to Sandbox or Production after running `bun login`.\n\nNot affiliated with or endorsed by Uber.",
+  "repository": "https://github.com/saumyg3/ride-home",
+  "categories": [
+    "travel",
+    "transportation",
+    "productivity"
+  ],
+  "publisher": {
+    "id": "pub_saumyagoyal",
+    "name": "Saumya Goyal",
+    "url": "https://saumyg3.github.io"
+  },
+  "runtime": {
+    "kind": "local-mcp",
+    "command": "bun",
+    "args": [
+      "server.ts"
+    ]
+  },
+  "auth": {
+    "kind": "apiKey",
+    "fields": [
+      {
+        "key": "UBER_CLIENT_ID",
+        "label": "Uber client ID",
+        "secret": false,
+        "required": false,
+        "placeholder": "From developer.uber.com, only needed for Sandbox or Production"
+      },
+      {
+        "key": "UBER_CLIENT_SECRET",
+        "label": "Uber client secret",
+        "secret": true,
+        "required": false,
+        "placeholder": "Used to renew your sign-in"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "kind": "network",
+      "domains": [
+        "api.uber.com",
+        "sandbox-api.uber.com",
+        "auth.uber.com",
+        "nominatim.openstreetmap.org"
+      ]
+    },
+    {
+      "kind": "background"
+    },
+    {
+      "kind": "notify"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "UBER_ENVIRONMENT",
+      "title": "Mode",
+      "description": "Demo uses a simulated Uber (no account). Sandbox uses Uber's test API with fake rides. Production books real rides and charges your card.",
+      "type": "select",
+      "default": "demo",
+      "options": [
+        {
+          "label": "Demo (simulated)",
+          "value": "demo"
+        },
+        {
+          "label": "Sandbox (Uber test API)",
+          "value": "sandbox"
+        },
+        {
+          "label": "Production (real rides)",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "name": "DEFAULT_PICKUP",
+      "title": "Default pickup",
+      "description": "Where to pick you up when you don't say. \"work\" or \"home\" use your Uber saved places, or enter a street address.",
+      "type": "text",
+      "placeholder": "work"
+    },
+    {
+      "name": "DEFAULT_PRODUCT",
+      "title": "Default ride type",
+      "description": "Used when you don't name one.",
+      "type": "select",
+      "default": "UberX",
+      "options": [
+        {
+          "label": "UberX",
+          "value": "UberX"
+        },
+        {
+          "label": "Comfort",
+          "value": "Comfort"
+        },
+        {
+          "label": "UberXL",
+          "value": "UberXL"
+        },
+        {
+          "label": "Black",
+          "value": "Black"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "ride_quote",
+      "title": "Get a ride price",
+      "description": "Get the price and pickup time for an Uber ride. This only looks up a price and never books anything. Use first whenever the user wants a ride, a car, an Uber, or asks how much a ride would cost, e.g. 'get me a ride home', 'how much is an Uber to the airport', 'book a Comfort to work'. Each request is quoted fresh: don't carry a ride type or pickup over from an earlier request unless the user says so.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "destination": {
+            "type": "string",
+            "description": "Where to go: 'home', 'work', a place name, or a street address"
+          },
+          "pickup": {
+            "type": "string",
+            "description": "Where to be picked up, if the user said. Leave out to use their default pickup"
+          },
+          "product": {
+            "type": "string",
+            "description": "Copy the user's own words for the ride type from their LATEST message only, e.g. 'Black', 'an XL', 'Comfort'. If their latest message didn't name a ride type, leave this out, even if an earlier message did; the default is used."
+          }
+        },
+        "required": [
+          "destination"
+        ]
+      }
+    },
+    {
+      "name": "request_ride",
+      "title": "Book the ride",
+      "description": "Book the ride from a ride_quote result after the user says yes to that price. Pass every field exactly as ride_quote returned it in book_with. Never call this without a quote from the same conversation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "quote_id": {
+            "type": "string",
+            "description": "book_with.quote_id from ride_quote"
+          },
+          "product": {
+            "type": "string",
+            "description": "book_with.product from ride_quote"
+          },
+          "price": {
+            "type": "string",
+            "description": "book_with.price from ride_quote, exactly"
+          },
+          "pickup": {
+            "type": "string",
+            "description": "book_with.pickup from ride_quote"
+          },
+          "destination": {
+            "type": "string",
+            "description": "book_with.destination from ride_quote"
+          },
+          "pickup_eta": {
+            "type": "string",
+            "description": "book_with.pickup_eta from ride_quote"
+          }
+        },
+        "required": [
+          "quote_id",
+          "product",
+          "price",
+          "pickup",
+          "destination",
+          "pickup_eta"
+        ]
+      },
+      "confirmation": {
+        "schemaVersion": 1,
+        "root": {
+          "type": "card",
+          "title": "Book this ride?",
+          "children": [
+            {
+              "type": "text",
+              "text": "{{product}} for {{price}}",
+              "variant": "title"
+            },
+            {
+              "type": "text",
+              "text": "From {{pickup}} to {{destination}}",
+              "variant": "body"
+            },
+            {
+              "type": "text",
+              "text": "Pickup in {{pickup_eta}}. Your Uber payment method is charged.",
+              "variant": "caption",
+              "color": "muted"
+            }
+          ],
+          "footer": [
+            {
+              "type": "actions",
+              "items": [
+                {
+                  "label": "Cancel",
+                  "role": "cancel"
+                },
+                {
+                  "label": "Book ride",
+                  "role": "confirm",
+                  "color": "accent"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ride_status",
+      "title": "Ride status",
+      "description": "Say where the user's Uber is: driver, car, plate, and how far away. Also reports a ride that ended, was canceled, or found no driver. Use when the user asks 'where's my driver', 'where's my Uber', 'what car is it', or 'what happened to my ride'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "track_ride",
+      "title": "Tell me when my driver is here",
+      "description": "Watch the user's Uber in the background and report back when the driver is arriving, or if the ride is canceled or can't find a driver. Use when the user says 'tell me when my driver is here', 'let me know when the car arrives', or 'keep an eye on my ride'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "max_minutes": {
+            "type": "number",
+            "description": "Stop watching after this many minutes. Default 20, maximum 45. 0 checks once."
+          }
+        }
+      },
+      "execution": {
+        "mode": "background",
+        "estimatedDurationMs": 300000
+      }
+    },
+    {
+      "name": "cancel_ride",
+      "title": "Cancel the ride",
+      "description": "Cancel the user's current Uber. Use when the user says 'cancel my ride' or 'cancel the Uber'. Call ride_status first and pass its request_id and summary, so only that exact ride can be canceled.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "description": "request_id from ride_status"
+          },
+          "summary": {
+            "type": "string",
+            "description": "summary from ride_status, e.g. 'UberX with Maria, Gray Toyota Prius'"
+          }
+        },
+        "required": [
+          "request_id",
+          "summary"
+        ]
+      },
+      "confirmation": {
+        "schemaVersion": 1,
+        "root": {
+          "type": "card",
+          "title": "Cancel this ride?",
+          "children": [
+            {
+              "type": "text",
+              "text": "{{summary}}",
+              "variant": "body"
+            },
+            {
+              "type": "text",
+              "text": "Uber may charge a cancellation fee once a driver is on the way.",
+              "variant": "caption",
+              "color": "warning"
+            }
+          ],
+          "footer": [
+            {
+              "type": "actions",
+              "items": [
+                {
+                  "label": "Keep ride",
+                  "role": "cancel"
+                },
+                {
+                  "label": "Cancel ride",
+                  "role": "confirm",
+                  "color": "danger"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "intents": [
+    {
+      "name": "ride_home",
+      "tool": "ride_quote",
+      "description": "The user wants an Uber home and didn't name a pickup or ride type. Gets a price only.",
+      "utterances": {
+        "en": [
+          "get me a ride home",
+          "get me an uber home",
+          "book a ride home",
+          "I need a ride home",
+          "uber home"
+        ]
+      },
+      "fixedArgs": {
+        "destination": "home"
+      },
+      "response": {
+        "en": "Here's the price for a ride home."
+      }
+    },
+    {
+      "name": "ride_to_work",
+      "tool": "ride_quote",
+      "description": "The user wants an Uber to work and didn't name a pickup or ride type. Gets a price only.",
+      "utterances": {
+        "en": [
+          "get me a ride to work",
+          "get me an uber to work",
+          "book a ride to the office"
+        ]
+      },
+      "fixedArgs": {
+        "destination": "work"
+      },
+      "response": {
+        "en": "Here's the price for a ride to work."
+      }
+    },
+    {
+      "name": "where_is_my_ride",
+      "tool": "ride_status",
+      "description": "The user asks where their Uber or driver is.",
+      "utterances": {
+        "en": [
+          "where's my uber",
+          "where is my driver",
+          "where's my ride",
+          "how far is my driver"
+        ]
+      },
+      "response": {
+        "en": "Here's your ride."
+      }
+    }
+  ],
+  "asr": {
+    "vocabulary": [
+      "Uber",
+      "UberX",
+      "UberXL",
+      "Uber Comfort",
+      "Uber Black"
+    ]
+  }
+}
