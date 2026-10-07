@@ -1,4 +1,4 @@
-// Named scenarios for the messy states Kai called out: auth, confirmation,
+// Named scenarios for the messy states that matter most: auth, confirmation,
 // and real-world state. Each one sets something up to go wrong, then checks
 // what the integration *said* against what the simulated Uber says *happened*.
 

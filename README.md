@@ -124,10 +124,6 @@ verify.ts           integration checks over MCP stdio
 
 The rule `src/uber.ts` enforces is that **reads are retried, ride creation never is.** A booking that times out or gets a 5xx might have created a car. So it's reported as "ambiguous", and the booking code looks for the ride instead of sending the request again. Retrying blindly is how double bookings happen, and it's the first planted bug in the mutation check.
 
-## Why not DoorDash
-
-Kai suggested DoorDash or Uber. DoorDash's public API (Drive) is for businesses that want Dashers to deliver their own orders. Its FAQ says customer ordering happens only in the DoorDash app. So "order my usual from the Thai place" isn't possible through an official API. Uber's Riders API supports exactly the flow needed here, and its sandbox can simulate the messy states.
-
 ## Limits, honestly
 
 - **Tested inside VoiceOS in demo mode, not yet against Uber's live sandbox.** The sandbox needs an Uber developer sign-in; `sandbox-check.ts` is ready for it. The simulated Uber follows Uber's documented endpoints, statuses, error codes, and fare expiry, but real responses may differ in details.
